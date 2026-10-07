@@ -25,6 +25,9 @@ bool Game::Initialize(GLFWwindow* window, int winW, int winH, int fbW, int fbH) 
 
     SetupInitialBattlefield();
 
+    // Immediately sync camera with renderer so initial frame renders the base centered in the main window
+    m_renderer.SetCamera(m_camX, m_camY, m_zoom);
+
     std::cout << "Game: Soviet RTS initialized successfully." << std::endl;
     return true;
 }
@@ -32,40 +35,60 @@ bool Game::Initialize(GLFWwindow* window, int winW, int winH, int fbW, int fbH) 
 void Game::SetupInitialBattlefield() {
     m_entities.Clear();
 
-    // Setup Soviet Base (bottom-left region in tile coordinates)
+    // Setup Soviet Base in Southwestern region with all iconic structures
     // 1. Soviet Construction Yard (3x3)
     Structure& cy = m_entities.CreateStructure(StructureType::SOVIET_CONYARD, Faction::SOVIET, 14, 56);
     m_map.SetBuildingOccupation(cy.tileX, cy.tileY, cy.wTiles, cy.hTiles, cy.id);
 
-    // 2. Tesla Reactor (2x2)
-    Structure& pwr = m_entities.CreateStructure(StructureType::SOVIET_POWER, Faction::SOVIET, 11, 52);
-    m_map.SetBuildingOccupation(pwr.tileX, pwr.tileY, pwr.wTiles, pwr.hTiles, pwr.id);
+    // 2. Primary Tesla Reactor (2x2)
+    Structure& pwr1 = m_entities.CreateStructure(StructureType::SOVIET_POWER, Faction::SOVIET, 10, 52);
+    m_map.SetBuildingOccupation(pwr1.tileX, pwr1.tileY, pwr1.wTiles, pwr1.hTiles, pwr1.id);
 
-    // 3. Ore Refinery (3x3)
-    Structure& ref = m_entities.CreateStructure(StructureType::SOVIET_REFINERY, Faction::SOVIET, 18, 53);
+    // 3. Auxiliary Tesla Reactor (2x2)
+    Structure& pwr2 = m_entities.CreateStructure(StructureType::SOVIET_POWER, Faction::SOVIET, 10, 48);
+    m_map.SetBuildingOccupation(pwr2.tileX, pwr2.tileY, pwr2.wTiles, pwr2.hTiles, pwr2.id);
+
+    // 4. Soviet Radar Dome (2x2)
+    Structure& rad = m_entities.CreateStructure(StructureType::SOVIET_RADAR, Faction::SOVIET, 14, 52);
+    m_map.SetBuildingOccupation(rad.tileX, rad.tileY, rad.wTiles, rad.hTiles, rad.id);
+
+    // 5. Soviet Ore Refinery (3x3) - Adjacent to the gold ore field
+    Structure& ref = m_entities.CreateStructure(StructureType::SOVIET_REFINERY, Faction::SOVIET, 19, 51);
     m_map.SetBuildingOccupation(ref.tileX, ref.tileY, ref.wTiles, ref.hTiles, ref.id);
 
-    // 4. Soviet Barracks (2x2)
-    Structure& bar = m_entities.CreateStructure(StructureType::SOVIET_BARRACKS, Faction::SOVIET, 11, 59);
+    // 6. Soviet Barracks (2x2)
+    Structure& bar = m_entities.CreateStructure(StructureType::SOVIET_BARRACKS, Faction::SOVIET, 10, 57);
     m_map.SetBuildingOccupation(bar.tileX, bar.tileY, bar.wTiles, bar.hTiles, bar.id);
 
+    // 7. Soviet War Factory (3x3)
+    Structure& wf = m_entities.CreateStructure(StructureType::SOVIET_WARFACTORY, Faction::SOVIET, 14, 61);
+    m_map.SetBuildingOccupation(wf.tileX, wf.tileY, wf.wTiles, wf.hTiles, wf.id);
+
+    // 8. Soviet Tesla Coil (2x2) - Defending eastern approach
+    Structure& tc = m_entities.CreateStructure(StructureType::SOVIET_TESLA_COIL, Faction::SOVIET, 19, 56);
+    m_map.SetBuildingOccupation(tc.tileX, tc.tileY, tc.wTiles, tc.hTiles, tc.id);
+
     // Initial Soviet Army deployed around base
-    m_entities.CreateUnit(UnitType::HARVESTER, Faction::SOVIET, Map::TileCenterToWorld(20, 58));
-    m_entities.CreateUnit(UnitType::HEAVY_TANK, Faction::SOVIET, Map::TileCenterToWorld(16, 61));
-    m_entities.CreateUnit(UnitType::HEAVY_TANK, Faction::SOVIET, Map::TileCenterToWorld(18, 61));
-    m_entities.CreateUnit(UnitType::CONSCRIPT, Faction::SOVIET, Map::TileCenterToWorld(14, 62));
-    m_entities.CreateUnit(UnitType::CONSCRIPT, Faction::SOVIET, Map::TileCenterToWorld(15, 62));
-    m_entities.CreateUnit(UnitType::CONSCRIPT, Faction::SOVIET, Map::TileCenterToWorld(16, 63));
-    m_entities.CreateUnit(UnitType::TESLA_TROOPER, Faction::SOVIET, Map::TileCenterToWorld(17, 63));
+    m_entities.CreateUnit(UnitType::HARVESTER, Faction::SOVIET, Map::TileCenterToWorld(21, 55));
+    m_entities.CreateUnit(UnitType::HEAVY_TANK, Faction::SOVIET, Map::TileCenterToWorld(17, 60));
+    m_entities.CreateUnit(UnitType::HEAVY_TANK, Faction::SOVIET, Map::TileCenterToWorld(19, 61));
+    m_entities.CreateUnit(UnitType::CONSCRIPT, Faction::SOVIET, Map::TileCenterToWorld(12, 60));
+    m_entities.CreateUnit(UnitType::CONSCRIPT, Faction::SOVIET, Map::TileCenterToWorld(13, 60));
+    m_entities.CreateUnit(UnitType::CONSCRIPT, Faction::SOVIET, Map::TileCenterToWorld(14, 60));
+    m_entities.CreateUnit(UnitType::TESLA_TROOPER, Faction::SOVIET, Map::TileCenterToWorld(18, 59));
 
     // Initialize Enemy Allied AI Base
     m_alliedAI.Initialize(m_entities, m_map);
 
-    // Center camera on Soviet ConYard in isometric coordinates
-    glm::vec2 cyCenter = cy.GetCenterWorld();
-    m_camX = cyCenter.x;
-    m_camY = cyCenter.y;
+    // Center camera on Soviet Base in the main window
+    // Center point of the base cluster in isometric coordinates:
+    // cx = 15.5, cy = 56.0 -> isoX = -1296.0f, isoY = 1144.0f
+    // Offset by +half sidebar width so the base is centered in the visible tactical window
+    float baseCenterX = -1296.0f;
+    float baseCenterY = 1144.0f;
     m_zoom = 1.0f;
+    m_camX = baseCenterX + (UI::SIDEBAR_WIDTH * 0.5f) / m_zoom;
+    m_camY = baseCenterY;
 }
 
 void Game::Update(float dt) {
@@ -791,11 +814,11 @@ void Game::OnKey(int key, int /*scancode*/, int action, int mods) {
     if (action != GLFW_PRESS) return;
 
     if (key == GLFW_KEY_SPACE || key == GLFW_KEY_H) {
-        // Focus on Soviet ConYard
+        // Focus on Soviet ConYard centered in main window
         for (const auto& s : m_entities.GetStructures()) {
             if (s.faction == Faction::SOVIET && s.type == StructureType::SOVIET_CONYARD) {
                 glm::vec2 c = s.GetCenterWorld();
-                m_camX = c.x;
+                m_camX = c.x + (UI::SIDEBAR_WIDTH * 0.5f) / m_zoom;
                 m_camY = c.y;
                 m_audio.Play(SoundId::RADAR_PING, 0.8f);
                 break;
@@ -845,4 +868,5 @@ void Game::OnResize(int winW, int winH, int fbW, int fbH) {
     m_windowW = winW;
     m_windowH = winH;
     m_renderer.Resize(winW, winH, fbW, fbH);
+    m_renderer.SetCamera(m_camX, m_camY, m_zoom);
 }

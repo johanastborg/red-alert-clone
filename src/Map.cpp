@@ -30,9 +30,9 @@ void Map::Initialize(int width, int height) {
 
     GenerateTerrain();
 
-    // Reveal starting area around Soviet base (tx: 10..24, ty: 45..65)
-    for (int y = 44; y <= 66; ++y) {
-        for (int x = 8; x <= 26; ++x) {
+    // Reveal starting area around Soviet base (tx: 6..28, ty: 42..68)
+    for (int y = 42; y <= 68; ++y) {
+        for (int x = 6; x <= 28; ++x) {
             if (IsInBounds(x, y)) {
                 m_tiles[y * m_width + x].shroud = ShroudStatus::VISIBLE;
             }
