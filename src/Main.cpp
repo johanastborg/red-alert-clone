@@ -47,7 +47,16 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
 
 } // namespace
 
-int main() {
+int main(int argc, char* argv[]) {
+    std::string screenshotPath = "";
+    int screenshotFrames = 0;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--screenshot" && i + 1 < argc) {
+            screenshotPath = argv[++i];
+            screenshotFrames = 8; // Render initial frames so textures & state settle
+        }
+    }
+
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return 1;
@@ -109,10 +118,12 @@ int main() {
               << "   - Mouse Wheel: Zoom In / Out\n"
               << "   - Space / H: Focus on Soviet Construction Yard\n"
               << "   - P: Pause Game\n"
+              << "   - F12: Save Screenshot (docs/screenshot.png)\n"
               << "   - 1-9: Control Groups (Ctrl+1-9 to Assign)\n"
               << "========================================================"
               << std::endl;
 
+    int frameCount = 0;
     while (!glfwWindowShouldClose(window)) {
         double currentTime = glfwGetTime();
         float dt = float(currentTime - lastTime);
@@ -125,6 +136,12 @@ int main() {
 
         game.Update(dt);
         game.Render();
+
+        frameCount++;
+        if (!screenshotPath.empty() && frameCount >= screenshotFrames) {
+            game.SaveScreenshot(screenshotPath);
+            break;
+        }
 
         glfwSwapBuffers(window);
     }

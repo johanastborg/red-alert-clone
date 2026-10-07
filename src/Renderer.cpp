@@ -2,6 +2,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <cstdint>
 #include <cmath>
 
 namespace {
@@ -502,4 +505,64 @@ void Renderer::DrawTextCentered(const std::string& text, float cx, float y, floa
 
 float Renderer::GetTextWidth(const std::string& text, float scale) const {
     return float(text.length()) * 8.0f * scale;
+}
+
+bool Renderer::SaveScreenshot(const std::string& filepath) {
+    if (m_fbW <= 0 || m_fbH <= 0) return false;
+
+    // Ensure directory exists
+    size_t slash = filepath.find_last_of("/\\");
+    if (slash != std::string::npos) {
+        std::string dir = filepath.substr(0, slash);
+        std::string mkdirCmd = "mkdir -p \"" + dir + "\"";
+        (void)system(mkdirCmd.c_str());
+    }
+
+    std::vector<uint8_t> rgba(m_fbW * m_fbH * 4);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(0, 0, m_fbW, m_fbH, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+
+    std::string tgaPath = filepath;
+    if (tgaPath.size() >= 4 && tgaPath.substr(tgaPath.size() - 4) == ".png") {
+        tgaPath = tgaPath.substr(0, tgaPath.size() - 4) + "_temp.tga";
+    } else {
+        tgaPath += ".tga";
+    }
+
+    std::ofstream file(tgaPath, std::ios::binary);
+    if (!file) {
+        std::cerr << "Renderer: Failed to create " << tgaPath << std::endl;
+        return false;
+    }
+
+    uint8_t header[18] = {0};
+    header[2] = 2; // uncompressed RGB
+    header[12] = static_cast<uint8_t>(m_fbW & 0xFF);
+    header[13] = static_cast<uint8_t>((m_fbW >> 8) & 0xFF);
+    header[14] = static_cast<uint8_t>(m_fbH & 0xFF);
+    header[15] = static_cast<uint8_t>((m_fbH >> 8) & 0xFF);
+    header[16] = 24; // 24-bit RGB
+    header[17] = 0;  // bottom-left origin matches OpenGL default
+    file.write(reinterpret_cast<const char*>(header), 18);
+
+    std::vector<uint8_t> bgr(m_fbW * m_fbH * 3);
+    for (size_t i = 0; i < size_t(m_fbW * m_fbH); ++i) {
+        bgr[i * 3 + 0] = rgba[i * 4 + 2]; // B
+        bgr[i * 3 + 1] = rgba[i * 4 + 1]; // G
+        bgr[i * 3 + 2] = rgba[i * 4 + 0]; // R
+    }
+    file.write(reinterpret_cast<const char*>(bgr.data()), bgr.size());
+    file.close();
+
+    if (filepath.size() >= 4 && filepath.substr(filepath.size() - 4) == ".png") {
+        std::string cmd = "sips -s format png \"" + tgaPath + "\" --out \"" + filepath + "\" > /dev/null 2>&1 && rm -f \"" + tgaPath + "\"";
+        int res = system(cmd.c_str());
+        if (res == 0) {
+            std::cout << "Screenshot successfully saved to " << filepath << std::endl;
+            return true;
+        }
+    }
+
+    std::cout << "Screenshot saved to " << tgaPath << std::endl;
+    return true;
 }

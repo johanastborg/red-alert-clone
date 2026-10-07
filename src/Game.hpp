@@ -26,6 +26,7 @@ public:
     void OnCursorPos(double xpos, double ypos);
     void OnScroll(double xoffset, double yoffset);
     void OnResize(int winW, int winH, int fbW, int fbH);
+    bool SaveScreenshot(const std::string& filepath);
 
 private:
     void SetupInitialBattlefield();

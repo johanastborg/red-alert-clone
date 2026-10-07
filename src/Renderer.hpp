@@ -58,6 +58,8 @@ public:
     void Flush();
     void FlushLines();
 
+    bool SaveScreenshot(const std::string& filepath);
+
     TextureAtlas& GetAtlas() { return m_atlas; }
     const TextureAtlas& GetAtlas() const { return m_atlas; }
 

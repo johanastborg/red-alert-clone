@@ -854,6 +854,10 @@ void Game::OnKey(int key, int /*scancode*/, int action, int mods) {
                 m_audio.Play(SoundId::SELECT, 0.9f);
             }
         }
+    } else if (key == GLFW_KEY_F12) {
+        m_renderer.SaveScreenshot("docs/screenshot.png");
+        m_ui.AddNotification("SCREENSHOT CAPTURED: docs/screenshot.png");
+        m_audio.Play(SoundId::RADAR_PING, 0.9f);
     } else if (key == GLFW_KEY_ESCAPE) {
         if (m_ui.IsInPlacementMode()) {
             m_ui.CancelPlacement(m_sovietCredits, m_audio);
@@ -869,4 +873,8 @@ void Game::OnResize(int winW, int winH, int fbW, int fbH) {
     m_windowH = winH;
     m_renderer.Resize(winW, winH, fbW, fbH);
     m_renderer.SetCamera(m_camX, m_camY, m_zoom);
+}
+
+bool Game::SaveScreenshot(const std::string& filepath) {
+    return m_renderer.SaveScreenshot(filepath);
 }

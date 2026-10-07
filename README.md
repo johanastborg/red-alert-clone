@@ -3,6 +3,8 @@
 
 A high-performance, standalone Command & Conquer: Red Alert clone playing the **Soviet (USSR) faction**, featuring iconic Soviet units and defenses, economy harvesting, dynamic procedural sound effects, fog of war, and an autonomous Allied AI enemy.
 
+![Command & Conquer: Red Alert Soviet Gameplay](docs/screenshot.png)
+
 ---
 
 ## Key Features
@@ -74,6 +76,7 @@ A high-performance, standalone Command & Conquer: Red Alert clone playing the **
 | **Pan Camera** | `W`, `A`, `S`, `D` or `Arrow Keys` or Middle-Mouse Drag |
 | **Zoom In / Out** | Mouse Scroll Wheel (0.6x to 1.8x) |
 | **Home to Construction Yard** | `Space` or `H` |
+| **Save Screenshot** | `F12` (saves to `docs/screenshot.png`) |
 | **Pause Game** | `P` |
 | **Assign Control Group** | `Ctrl + 1` ... `Ctrl + 9` |
 | **Select Control Group** | `1` ... `9` |
